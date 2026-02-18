@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HabitVerse</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{
+font-family: Arial;
+background: linear-gradient(to right,#8360c3,#2ebf91);
+color:white;
+text-align:center;
+}
+
+.container{
+width:90%;
+max-width:900px;
+margin:auto;
+}
+
+input,select,button{
+padding:10px;
+border-radius:5px;
+border:none;
+margin:5px;
+}
+
+button{
+background:#ff9800;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#ff5722;
+}
+
+.habit{
+background: rgba(255,255,255,0.2);
+padding:10px;
+margin:10px;
+border-radius:10px;
+}
+
+.day{
+width:35px;
+height:35px;
+display:inline-block;
+margin:3px;
+border-radius:5px;
+}
+
+.happy{background:#4caf50;}
+.normal{background:#ffc107;}
+.sad{background:#f44336;}
+
+progress{
+width:80%;
+height:20px;
+}
+
+@media(max-width:600px){
+input,select{width:90%;}
+}
+</style>
+</head>
+
+<body>
+
+<h1>🌟 HabitVerse</h1>
+<p>Gamified Mood-Based AI Habit Tracker</p>
+
+<div class="container">
+
+<input type="text" id="habitInput" placeholder="Enter your habit">
+<select id="mood">
+<option value="happy">😄 Happy</option>
+<option value="normal">😐 Normal</option>
+<option value="sad">😢 Sad</option>
+</select>
+<button onclick="addHabit()">Add Habit</button>
+
+<div id="habits"></div>
+
+<h2>🎮 Level: <span id="level">1</span></h2>
+<progress id="xpBar" value="0" max="100"></progress>
+
+<h2>🎨 Habit Art Calendar</h2>
+<div id="calendar"></div>
+
+<h2>🤖 AI Coach</h2>
+<p id="aiMessage"></p>
+
+<h2>📊 Mood Progress</h2>
+<canvas id="chart"></canvas>
+
+</div>
+
+<script>
+let habits = JSON.parse(localStorage.getItem("habits")) || [];
+let days = JSON.parse(localStorage.getItem("days")) || {};
+let xp = Number(localStorage.getItem("xp")) || 0;
+let level = Number(localStorage.getItem("level")) || 1;
+
+function addHabit(){
+let habit = document.getElementById("habitInput").value;
+let mood = document.getElementById("mood").value;
+
+if(habit==""){
+alert("Enter a habit");
+return;
+}
+
+habits.push({name:habit,mood:mood});
+let today = new Date().getDate();
+days[today] = mood;
+
+xp += 10;
+if(xp>=100){
+level++;
+xp = 0;
+}
+
+saveData();
+display();
+document.getElementById("habitInput").value="";
+}
+
+function saveData(){
+localStorage.setItem("habits",JSON.stringify(habits));
+localStorage.setItem("days",JSON.stringify(days));
+localStorage.setItem("xp",xp);
+localStorage.setItem("level",level);
+}
+
+function display(){
+let div = document.getElementById("habits");
+div.innerHTML="";
+
+habits.forEach(h=>{
+div.innerHTML += `<div class="habit">🔥 ${h.name} | Mood: ${h.mood}</div>`;
+});
+
+document.getElementById("level").innerText = level;
+document.getElementById("xpBar").value = xp;
+
+renderCalendar();
+aiCoach();
+updateChart();
+}
+
+function renderCalendar(){
+let cal = document.getElementById("calendar");
+cal.innerHTML="";
+for(let i=1;i<=30;i++){
+let d=document.createElement("div");
+d.className="day";
+if(days[i]){
+d.classList.add(days[i]);
+}
+cal.appendChild(d);
+}
+}
+
+function aiCoach(){
+let moods = Object.values(days);
+let msg="";
+
+if(moods.includes("sad")){
+msg="🤖 Don't give up! Tomorrow is a fresh start 💪";
+}
+else if(moods.includes("happy")){
+msg="🤖 Amazing! Your habits are boosting your happiness 🌟";
+}
+else{
+msg="🤖 Stay consistent. Small actions build big success 🚀";
+}
+
+document.getElementById("aiMessage").innerText = msg;
+}
+
+function updateChart(){
+let happy = Object.values(days).filter(m=>m=="happy").length;
+let normal = Object.values(days).filter(m=>m=="normal").length;
+let sad = Object.values(days).filter(m=>m=="sad").length;
+
+let ctx=document.getElementById("chart").getContext("2d");
+if(window.myChart) window.myChart.destroy();
+
+window.myChart=new Chart(ctx,{
+type:'bar',
+data:{
+labels:["Happy","Normal","Sad"],
+datasets:[{
+data:[happy,normal,sad],
+backgroundColor:["green","yellow","red"]
+}]
+}
+});
+}
+
+display();
+</script>
+
+</body>
+</html>
