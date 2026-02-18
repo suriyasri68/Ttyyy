@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HabitVerse Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{
+font-family: Arial;
+background: linear-gradient(to right,#8360c3,#2ebf91);
+color:white;
+text-align:center;
+transition:0.5s;
+}
+.dark{
+background: linear-gradient(to right,#141e30,#243b55);
+}
+.container{width:90%;max-width:900px;margin:auto;}
+input,select,button{padding:10px;border-radius:5px;border:none;margin:5px;}
+button{background:#ff9800;color:white;cursor:pointer;}
+button:hover{background:#ff5722;}
+
+.habit{
+background: rgba(255,255,255,0.2);
+padding:10px;margin:10px;border-radius:10px;
+animation: fadeIn 0.5s;
+}
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(20px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+.day{width:30px;height:30px;display:inline-block;margin:3px;border-radius:5px;}
+.happy{background:#4caf50;}
+.normal{background:#ffc107;}
+.sad{background:#f44336;}
+
+progress{width:80%;height:20px;}
+
+@media(max-width:600px){
+input,select{width:90%;}
+}
+</style>
+</head>
+
+<body>
+
+<h1>🌟 HabitVerse Pro</h1>
+<p>Gamified Mood-Based AI Habit Tracker</p>
+
+<button onclick="toggleDark()">🌙 Dark Mode</button>
+
+<div class="container">
+
+<input type="text" id="habitInput" placeholder="Enter your habit">
+<select id="mood">
+<option value="happy">😄 Happy</option>
+<option value="normal">😐 Normal</option>
+<option value="sad">😢 Sad</option>
+</select>
+<button onclick="addHabit()">Add Habit</button>
+
+<h3>🔥 Streak: <span id="streak">0</span> days</h3>
+
+<div id="habits"></div>
+
+<h2>🎮 Level: <span id="level">1</span></h2>
+<progress id="xpBar" value="0" max="100"></progress>
+
+<h2>🎨 Habit Art Calendar</h2>
+<div id="calendar"></div>
+
+<h2>🤖 AI Coach</h2>
+<p id="aiMessage"></p>
+
+<h2>📊 Mood Progress</h2>
+<canvas id="chart"></canvas>
+
+</div>
+
+<audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+
+<script>
+let habits = JSON.parse(localStorage.getItem("habits")) || [];
+let days = JSON.parse(localStorage.getItem("days")) || {};
+let xp = Number(localStorage.getItem("xp")) || 0;
+let level = Number(localStorage.getItem("level")) || 1;
+let dark = localStorage.getItem("dark")=="true";
+
+if(dark) document.body.classList.add("dark");
+
+function playSound(){
+document.getElementById("sound").play();
+}
+
+function toggleDark(){
+document.body.classList.toggle("dark");
+localStorage.setItem("dark",document.body.classList.contains("dark"));
+}
+
+function addHabit(){
+let habit = habitInput.value;
+let mood = document.getElementById("mood").value;
+if(habit==""){alert("Enter habit");return;}
+
+habits.push({name:habit,mood:mood});
+let today=new Date().getDate();
+days[today]=mood;
+
+xp+=10;
+if(xp>=100){level++;xp=0;}
+
+playSound();
+saveData();
+display();
+habitInput.value="";
+}
+
+function deleteHabit(i){
+habits.splice(i,1);
+saveData();
+display();
+}
+
+function saveData(){
+localStorage.setItem("habits",JSON.stringify(habits));
+localStorage.setItem("days",JSON.stringify(days));
+localStorage.setItem("xp",xp);
+localStorage.setItem("level",level);
+}
+
+function calculateStreak(){
+let streak=0;
+let today=new Date().getDate();
+for(let i=today;i>0;i--){
+if(days[i]) streak++;
+else break;
+}
+return streak;
+}
+
+function display(){
+let div=document.getElementById("habits");
+div.innerHTML="";
+habits.forEach((h,i)=>{
+div.innerHTML+=`<div class="habit">
+🔥 ${h.name} | Mood: ${h.mood}
+<button onclick="deleteHabit(${i})">❌</button>
+</div>`;
+});
+
+document.getElementById("level").innerText=level;
+document.getElementById("xpBar").value=xp;
+document.getElementById("streak").innerText=calculateStreak();
+
+renderCalendar();
+aiCoach();
+updateChart();
+}
+
+function renderCalendar(){
+calendar.innerHTML="";
+for(let i=1;i<=30;i++){
+let d=document.createElement("div");
+d.className="day";
+if(days[i]) d.classList.add(days[i]);
+calendar.appendChild(d);
+}
+}
+
+function aiCoach(){
+let moods=Object.values(days);
+let msg="";
+if(moods.includes("sad")) msg="🤖 Don't quit! Restart your streak today 💪";
+else if(moods.includes("happy")) msg="🤖 Excellent! Your habits improve your mood 🌟";
+else msg="🤖 Stay disciplined. Small steps = big future 🚀";
+aiMessage.innerText=msg;
+}
+
+function updateChart(){
+let happy=Object.values(days).filter(m=>m=="happy").length;
+let normal=Object.values(days).filter(m=>m=="normal").length;
+let sad=Object.values(days).filter(m=>m=="sad").length;
+
+let ctx=document.getElementById("chart").getContext("2d");
+if(window.myChart) window.myChart.destroy();
+
+window.myChart=new Chart(ctx,{
+type:'doughnut',
+data:{
+labels:["Happy","Normal","Sad"],
+datasets:[{data:[happy,normal,sad],backgroundColor:["green","yellow","red"]}]
+}
+});
+}
+
+display();
+</script>
+</body>
+</html>
