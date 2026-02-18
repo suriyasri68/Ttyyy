@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HabitVerse Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+color:white;
+overflow-x:hidden;
+}
+
+/* Animated Background */
+.bg{
+min-height:100vh;
+background: linear-gradient(-45deg,#ee7752,#e73c7e,#23a6d5,#23d5ab);
+background-size:400% 400%;
+animation: gradient 10s ease infinite;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+@keyframes gradient{
+0%{background-position:0% 50%;}
+50%{background-position:100% 50%;}
+100%{background-position:0% 50%;}
+}
+
+/* Login Box */
+.login-box{
+background: rgba(0,0,0,0.5);
+padding:30px;
+border-radius:15px;
+text-align:center;
+box-shadow:0 0 20px rgba(0,0,0,0.5);
+animation: pop 1s;
+}
+
+@keyframes pop{
+from{transform:scale(0.5);opacity:0;}
+to{transform:scale(1);opacity:1;}
+}
+
+input,select,button{
+padding:10px;
+border:none;
+border-radius:5px;
+margin:5px;
+}
+
+button{
+background:#ff9800;
+color:white;
+cursor:pointer;
+}
+
+button:hover{background:#ff5722;}
+
+.container{
+width:90%;
+max-width:900px;
+margin:auto;
+display:none;
+}
+
+/* Habit UI */
+.habit{
+background: rgba(255,255,255,0.2);
+padding:10px;
+margin:10px;
+border-radius:10px;
+}
+
+.day{
+width:30px;height:30px;
+display:inline-block;
+margin:3px;
+border-radius:5px;
+}
+
+.happy{background:#4caf50;}
+.normal{background:#ffc107;}
+.sad{background:#f44336;}
+
+progress{width:80%;height:20px;}
+
+.dark{
+background:#121212;
+}
+
+/* Logout */
+.logout{
+position:fixed;
+top:10px;
+right:10px;
+background:red;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN PAGE -->
+<div class="bg" id="loginPage">
+<div class="login-box">
+<h1>🌟 HabitVerse</h1>
+<p>Turn Habits into a Game</p>
+<input type="text" id="username" placeholder="Enter your name"><br>
+<button onclick="login()">Enter HabitVerse 🚀</button>
+</div>
+</div>
+
+<!-- MAIN APP -->
+<div class="container" id="appPage">
+
+<button class="logout" onclick="logout()">Logout</button>
+
+<h1>Welcome <span id="userDisplay"></span> 👋</h1>
+
+<input type="text" id="habitInput" placeholder="Enter your habit">
+<select id="mood">
+<option value="happy">😄 Happy</option>
+<option value="normal">😐 Normal</option>
+<option value="sad">😢 Sad</option>
+</select>
+<button onclick="addHabit()">Add Habit</button>
+
+<h3>🔥 Streak: <span id="streak">0</span> days</h3>
+
+<div id="habits"></div>
+
+<h2>🎮 Level: <span id="level">1</span></h2>
+<progress id="xpBar" value="0" max="100"></progress>
+
+<h2>🎨 Habit Art Calendar</h2>
+<div id="calendar"></div>
+
+<h2>🤖 AI Coach</h2>
+<p id="aiMessage"></p>
+
+<h2>📊 Mood Progress</h2>
+<canvas id="chart"></canvas>
+
+</div>
+
+<audio id="sound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+
+<script>
+let user = localStorage.getItem("user");
+let habits = JSON.parse(localStorage.getItem("habits")) || [];
+let days = JSON.parse(localStorage.getItem("days")) || {};
+let xp = Number(localStorage.getItem("xp")) || 0;
+let level = Number(localStorage.getItem("level")) || 1;
+
+function login(){
+let name=document.getElementById("username").value;
+if(name==""){alert("Enter your name");return;}
+localStorage.setItem("user",name);
+showApp();
+}
+
+function logout(){
+localStorage.removeItem("user");
+location.reload();
+}
+
+function showApp(){
+document.getElementById("loginPage").style.display="none";
+document.getElementById("appPage").style.display="block";
+document.getElementById("userDisplay").innerText=user;
+display();
+}
+
+if(user){
+showApp();
+}
+
+/* Habit Logic */
+function playSound(){
+document.getElementById("sound").play();
+}
+
+function addHabit(){
+let habit=habitInput.value;
+let mood=document.getElementById("mood").value;
+if(habit==""){alert("Enter habit");return;}
+
+habits.push({name:habit,mood:mood});
+let today=new Date().getDate();
+days[today]=mood;
+
+xp+=10;
+if(xp>=100){level++;xp=0;}
+
+playSound();
+saveData();
+display();
+habitInput.value="";
+}
+
+function saveData(){
+localStorage.setItem("habits",JSON.stringify(habits));
+localStorage.setItem("days",JSON.stringify(days));
+localStorage.setItem("xp",xp);
+localStorage.setItem("level",level);
+}
+
+function calculateStreak(){
+let streak=0;
+let today=new Date().getDate();
+for(let i=today;i>0;i--){
+if(days[i]) streak++;
+else break;
+}
+return streak;
+}
+
+function display(){
+let div=document.getElementById("habits");
+div.innerHTML="";
+habits.forEach(h=>{
+div.innerHTML+=`<div class="habit">🔥 ${h.name} | Mood: ${h.mood}</div>`;
+});
+
+document.getElementById("level").innerText=level;
+document.getElementById("xpBar").value=xp;
+document.getElementById("streak").innerText=calculateStreak();
+
+renderCalendar();
+aiCoach();
+updateChart();
+}
+
+function renderCalendar(){
+calendar.innerHTML="";
+for(let i=1;i<=30;i++){
+let d=document.createElement("div");
+d.className="day";
+if(days[i]) d.classList.add(days[i]);
+calendar.appendChild(d);
+}
+}
+
+function aiCoach(){
+let moods=Object.values(days);
+let msg="";
+if(moods.includes("sad")) msg="🤖 Don't quit! Tomorrow is a fresh start 💪";
+else if(moods.includes("happy")) msg="🤖 Your habits boost happiness 🌟";
+else msg="🤖 Stay consistent. Small steps = big future 🚀";
+aiMessage.innerText=msg;
+}
+
+function updateChart(){
+let happy=Object.values(days).filter(m=>m=="happy").length;
+let normal=Object.values(days).filter(m=>m=="normal").length;
+let sad=Object.values(days).filter(m=>m=="sad").length;
+
+let ctx=document.getElementById("chart").getContext("2d");
+if(window.myChart) window.myChart.destroy();
+
+window.myChart=new Chart(ctx,{
+type:'doughnut',
+data:{
+labels:["Happy","Normal","Sad"],
+datasets:[{data:[happy,normal,sad],backgroundColor:["green","yellow","red"]}]
+}
+});
+}
+</script>
+
+</body>
+</html>
